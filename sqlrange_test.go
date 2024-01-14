@@ -2,12 +2,70 @@ package sqlrange_test
 
 import (
 	"fmt"
+	"log"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/achille-roussel/sqlrange"
 )
+
+func ExampleExec() {
+	type Row struct {
+		Age  int    `sql:"age"`
+		Name string `sql:"name"`
+	}
+
+	db := newTestDB(new(testing.T), "people")
+	defer db.Close()
+
+	for res, err := range sqlrange.Exec(db, `INSERT|people|name=?,age=?`,
+		func(yield func(Row, error) bool) {
+			if !yield(Row{Age: 19, Name: "Luke"}, nil) {
+				return
+			}
+			if !yield(Row{Age: 42, Name: "Hitchhiker"}, nil) {
+				return
+			}
+		},
+		sqlrange.ExecArgsFields[Row]("name", "age"),
+	) {
+		if err != nil {
+			log.Fatal()
+		}
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(rowsAffected)
+	}
+
+	// Output:
+	// 1
+	// 1
+}
+
+func ExampleQuery() {
+	type Row struct {
+		Age  int    `sql:"age"`
+		Name string `sql:"name"`
+	}
+
+	db := newTestDB(new(testing.T), "people")
+	defer db.Close()
+
+	for row, err := range sqlrange.Query[Row](db, `SELECT|people|age,name|`) {
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(row)
+	}
+
+	// Output:
+	// {1 Alice}
+	// {2 Bob}
+	// {3 Chris}
+}
 
 type person struct {
 	Age       int       `sql:"age"`
