@@ -8,6 +8,7 @@ import (
 	"iter"
 	"reflect"
 	"slices"
+	"sync/atomic"
 )
 
 // ExecOption is a functional option type to configure the Exec and ExecContext
@@ -291,24 +292,47 @@ func Scan[Row any](rows *sql.Rows) iter.Seq2[Row, error] {
 // Fields returns a sequence of the fields of a struct type that have a "sql"
 // tag.
 func Fields(t reflect.Type) iter.Seq2[string, reflect.StructField] {
-	return func(yield func(string, reflect.StructField) bool) { fields(yield, t) }
+	return func(yield func(string, reflect.StructField) bool) {
+		cache, _ := cachedFields.Load().(map[reflect.Type][]field)
+
+		fields, ok := cache[t]
+		if !ok {
+			fields = appendFields(nil, t)
+
+			newCache := make(map[reflect.Type][]field, len(cache)+1)
+			for k, v := range cache {
+				newCache[k] = v
+			}
+			newCache[t] = fields
+			cachedFields.Store(newCache)
+		}
+
+		for _, f := range fields {
+			if !yield(f.name, f.field) {
+				return
+			}
+		}
+	}
 }
 
-func fields(yield func(string, reflect.StructField) bool, t reflect.Type) bool {
+type field struct {
+	name  string
+	field reflect.StructField
+}
+
+var cachedFields atomic.Value // map[reflect.Type][]field
+
+func appendFields(fields []field, t reflect.Type) []field {
 	for i, n := 0, t.NumField(); i < n; i++ {
 		if f := t.Field(i); f.IsExported() {
 			if f.Anonymous {
 				if f.Type.Kind() == reflect.Struct {
-					if !fields(yield, f.Type) {
-						return false
-					}
+					fields = appendFields(fields, f.Type)
 				}
 			} else if s, ok := f.Tag.Lookup("sql"); ok {
-				if !yield(s, f) {
-					return false
-				}
+				fields = append(fields, field{s, f})
 			}
 		}
 	}
-	return true
+	return fields
 }
