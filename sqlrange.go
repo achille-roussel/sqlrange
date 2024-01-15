@@ -141,9 +141,11 @@ func ExecContext[Row any](ctx context.Context, e Executable, query string, seq i
 		}
 
 		if options.args == nil {
-			val := reflect.ValueOf(new(Row)).Elem()
+			row := new(Row)
+			val := reflect.ValueOf(row).Elem()
 			fields := Fields(val.Type())
-			options.args = func(args []any, _ Row) []any {
+			options.args = func(args []any, in Row) []any {
+				*row = in
 				for _, structField := range fields {
 					args = append(args, val.FieldByIndex(structField.Index).Interface())
 				}
@@ -297,7 +299,7 @@ func Fields(t reflect.Type) iter.Seq2[string, reflect.StructField] {
 
 		fields, ok := cache[t]
 		if !ok {
-			fields = appendFields(nil, t)
+			fields = appendFields(nil, t, nil)
 
 			newCache := make(map[reflect.Type][]field, len(cache)+1)
 			for k, v := range cache {
@@ -322,12 +324,15 @@ type field struct {
 
 var cachedFields atomic.Value // map[reflect.Type][]field
 
-func appendFields(fields []field, t reflect.Type) []field {
+func appendFields(fields []field, t reflect.Type, index []int) []field {
 	for i, n := 0, t.NumField(); i < n; i++ {
 		if f := t.Field(i); f.IsExported() {
+			if len(index) > 0 {
+				f.Index = append(index, f.Index...)
+			}
 			if f.Anonymous {
 				if f.Type.Kind() == reflect.Struct {
-					fields = appendFields(fields, f.Type)
+					fields = appendFields(fields, f.Type, f.Index)
 				}
 			} else if s, ok := f.Tag.Lookup("sql"); ok {
 				fields = append(fields, field{s, f})
