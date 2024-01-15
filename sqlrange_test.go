@@ -21,17 +21,13 @@ func ExampleExec() {
 
 	for res, err := range sqlrange.Exec(db, `INSERT|people|name=?,age=?`,
 		func(yield func(Row, error) bool) {
-			if !yield(Row{Age: 19, Name: "Luke"}, nil) {
-				return
-			}
-			if !yield(Row{Age: 42, Name: "Hitchhiker"}, nil) {
-				return
-			}
+			_ = yield(Row{Age: 19, Name: "Luke"}, nil) &&
+				yield(Row{Age: 42, Name: "Hitchhiker"}, nil)
 		},
 		sqlrange.ExecArgsFields[Row]("name", "age"),
 	) {
 		if err != nil {
-			log.Fatal()
+			log.Fatal(err)
 		}
 		rowsAffected, err := res.RowsAffected()
 		if err != nil {
