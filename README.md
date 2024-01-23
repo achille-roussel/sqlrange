@@ -111,6 +111,30 @@ if err := tx.Commit(); err != nil {
 }
 ```
 
+### Context
+
+Mirroring methods of the `sql.DB` type, functions of the `sqlrange` package have
+variants that take a `context.Context` as first argument to support asynchronous
+cancellation or timing out the operations.
+
+Reusing the example above, we could set a 10 secondstime limit for the query
+using **QueryContext** instead of **Query**:
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+
+for p, err := range sqlrange.QueryContext[Point](ctx, db, `select x, y from points`) {
+    if err != nil {
+        ...
+    }
+    ...
+}
+```
+
+The context is propagated to the `sql.(*DB).QueryContext` method, which then
+passes it to the underlying SQL driver.
+
 ## Performance
 
 Functions in this package are optimized to have a minimal compute and memory
