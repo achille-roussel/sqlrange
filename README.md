@@ -1,7 +1,5 @@
 # sqlrange [![Go Reference](https://pkg.go.dev/badge/github.com/achille-roussel/sqlrange.svg)](https://pkg.go.dev/github.com/achille-roussel/sqlrange)
 
-[go1.22rc1]: https://gist.github.com/achille-roussel/5a9afe81c91891de4fad0bfe0965a9ea
-
 Library using the `database/sql` package and Go 1.22 range functions to execute
 queries against SQL databases.
 
@@ -12,22 +10,13 @@ This package is intended to be used as a library and installed with:
 go get github.com/achille-roussel/sqlrange
 ```
 
-:warning: The package depends on Go 1.22 (currently in rc1 release) and
-enabling the rangefunc experiment.
+:warning: The package depends on Go 1.22 and enabling the rangefunc experiment.
 
-To download Go 1.22 rc1: https://pkg.go.dev/golang.org/dl/go1.22rc1
-```
-go install golang.org/dl/go1.22rc1@latest
-go1.22rc1 download
-```
-Then to enable the rangefunc experiment, set the GOEXPERIMENT environment
-variable in the shell that executes the go commands:
+To enable the rangefunc experiment, set the GOEXPERIMENT environment variable in
+the shell that executes the go commands:
 ```sh
 export GOEXPERIMENT=rangefunc
 ```
-
-For a more detailed guide of how to configure Go 1.22 with range functions see
-[Go 1.22 rc1 installation to enable the range functions experiment][go1.22rc1].
 
 ## Usage
 
