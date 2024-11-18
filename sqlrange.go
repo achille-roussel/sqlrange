@@ -1,4 +1,4 @@
-// Package sqlrange integrates database/sql with Go 1.22 range functions.
+// Package sqlrange integrates database/sql with Go 1.23 range functions.
 package sqlrange
 
 import (
@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 )
 
-// ExecOption is a functional option type to configure the Exec and ExecContext
+// ExecOption is a functional option type to configure the [Exec] and [ExecContext]
 // functions.
 type ExecOption[Row any] func(*execOptions[Row])
 
@@ -50,7 +50,7 @@ func ExecArgsFields[Row any](columnNames ...string) ExecOption[Row] {
 //
 // By default, the Row value is converted to a list of arguments by taking the
 // fields with a "sql" struct tag in the order they appear in the struct,
-// as defined by the reflect.VisibleFields function.
+// as defined by the [reflect.VisibleFields] function.
 //
 // The function must append the arguments to the slice passed as argument and
 // return the resulting slice.
@@ -61,7 +61,7 @@ func ExecArgs[Row any](fn func([]any, Row) []any) ExecOption[Row] {
 // ExecQuery is an option that specifies the function being called to generate
 // the query to execute for a given Row value.
 //
-// The function receives the original query value passed to Exec or ExecContext,
+// The function receives the original query value passed to [Exec] or [ExecContext],
 // and returns the query to execute.
 //
 // This is useful when parts of the query depend on the Row value that the query
@@ -75,20 +75,20 @@ type execOptions[Row any] struct {
 	query func(string, Row) string
 }
 
-// Executable is the interface implemented by sql.DB, sql.Stmt, or sql.Tx.
+// Executable is the interface implemented by [sql.DB], [sql.Conn], or [sql.Tx].
 type Executable interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
-// Exec is like ExecContext but it uses the background context.
+// Exec is like [ExecContext] but it uses the background context.
 func Exec[Row any](e Executable, query string, seq iter.Seq2[Row, error], opts ...ExecOption[Row]) iter.Seq2[sql.Result, error] {
 	return ExecContext[Row](context.Background(), e, query, seq, opts...)
 }
 
 // ExecContext executes a query for each row in the sequence.
 //
-// To ensure that the query is executed atomicatlly, it is usually useful to
-// call ExecContext on a transaction (sql.Tx), for example:
+// To ensure that the query is executed atomically, it is usually useful to
+// call ExecContext on a transaction ([sql.Tx]), for example:
 //
 //	tx, err := db.BeginTx(ctx, nil)
 //	if err != nil {
@@ -179,19 +179,19 @@ func ExecContext[Row any](ctx context.Context, e Executable, query string, seq i
 }
 
 // Queryable is an interface implemented by types that can send SQL queries,
-// such as *sql.DB, *sql.Stmt, or *sql.Tx.
+// such as [sql.DB], [sql.Conn], or [sql.Tx].
 type Queryable interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-// Query is like QueryContext but it uses the background context.
+// Query is like [QueryContext] but it uses the background context.
 func Query[Row any](q Queryable, query string, args ...any) iter.Seq2[Row, error] {
 	return QueryContext[Row](context.Background(), q, query, args...)
 }
 
 // QueryContext returns the results of the query as a sequence of rows.
 //
-// The returned function automatically closes the unerlying sql.Rows value when
+// The returned function automatically closes the underlying [sql.Rows] value when
 // it completes its iteration.
 //
 // A typical use of QueryContext is:
@@ -203,10 +203,10 @@ func Query[Row any](q Queryable, query string, args ...any) iter.Seq2[Row, error
 //	  ...
 //	}
 //
-// The q parameter represents a queryable type, such as *sql.DB, *sql.Stmt,
-// or *sql.Tx.
+// The q parameter represents a queryable type, such as [sql.DB], [sql.Conn],
+// or [sql.Tx].
 //
-// See Scan for more information about how the rows are mapped to the row type
+// See [Scan] for more information about how the rows are mapped to the row type
 // parameter Row.
 func QueryContext[Row any](ctx context.Context, q Queryable, query string, args ...any) iter.Seq2[Row, error] {
 	return func(yield func(Row, error) bool) {
@@ -219,7 +219,7 @@ func QueryContext[Row any](ctx context.Context, q Queryable, query string, args 
 	}
 }
 
-// Scan returns a sequence of rows from a sql.Rows value.
+// Scan returns a sequence of rows from a [sql.Rows] value.
 //
 // The returned function automatically closes the rows passed as argument when
 // it completes its iteration.
